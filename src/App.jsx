@@ -1387,6 +1387,17 @@ function hostnameOf(url) {
 
 const AI_TREE = [
   {
+    id: "pipeline",
+    label: "Pipeline de dados",
+    color: "slate",
+    tentative: true,
+    children: [
+      { id: "coleta",        label: "Coleta de dados",        rel: "docs" },
+      { id: "features",      label: "Feature engineering",    rel: "core" },
+      { id: "versionamento", label: "Versionamento de dados", rel: "harnesseng" },
+    ],
+  },
+  {
     id: "ml",
     label: "Machine learning",
     color: "teal",
@@ -1394,10 +1405,11 @@ const AI_TREE = [
       {
         id: "core",
         label: "Core",
+        color: "teal",
         children: [
-          { id: "sup",     label: "Supervisionado",    kind: "paradigma" },
-          { id: "unsup",   label: "Não supervisionado", kind: "paradigma" },
-          { id: "reforco", label: "Por reforço",        kind: "paradigma", rel: "llm" },
+          { id: "sup",     label: "Supervisionado",     kind: "paradigma" },
+          { id: "unsup",   label: "Não supervisionado",  kind: "paradigma" },
+          { id: "reforco", label: "Por reforço",         kind: "paradigma", rel: "llm" },
           { id: "arvores", label: "Árvores e regressão", kind: "paradigma" },
         ],
       },
@@ -1406,10 +1418,10 @@ const AI_TREE = [
         label: "Deep learning",
         color: "indigo",
         children: [
-          { id: "neuronios", label: "Neurônios e camadas", kind: "mecanismo" },
-          { id: "backprop",  label: "Backpropagation",    kind: "mecanismo", rel: "sup" },
-          { id: "ativacao",  label: "Função de ativação", kind: "mecanismo" },
-          { id: "cnn",       label: "Redes convolucionais", kind: "mecanismo" },
+          { id: "neuronios", label: "Neurônios e camadas",   kind: "mecanismo" },
+          { id: "backprop",  label: "Backpropagation",       kind: "mecanismo", rel: "sup" },
+          { id: "ativacao",  label: "Função de ativação",    kind: "mecanismo" },
+          { id: "cnn",       label: "Redes convolucionais",  kind: "mecanismo" },
           {
             id: "genai",
             label: "IA generativa",
@@ -1427,7 +1439,8 @@ const AI_TREE = [
                   { id: "vdb",  label: "Vector DB" },
                 ],
               },
-              { id: "ctxeng", label: "Context engineering", kind: "estratégia" },
+              { id: "ctxeng",  label: "Context engineering", kind: "estratégia" },
+              { id: "workflow", label: "Workflow",            kind: "estratégia", rel: "agentenode" },
               {
                 id: "agentenode",
                 label: "Agente",
@@ -1451,19 +1464,23 @@ const AI_TREE = [
     label: "Mercado",
     color: "violet",
     children: [
-      { id: "chatbots",   label: "Chatbots (ChatGPT, Claude)",           rel: "llm" },
+      { id: "chatbots",   label: "Chatbots (ChatGPT, Claude)",            rel: "llm" },
       { id: "codeagents", label: "Agentes de código (Claude Code, Devin)", rel: "agentenode" },
-      { id: "ides",       label: "IDEs agênticas (Antigravity, Cursor)",  rel: "agentenode" },
+      { id: "ides",       label: "IDEs agênticas (Antigravity, Cursor)",   rel: "agentenode" },
     ],
   },
 ];
 
 const AI_LINKS = [
-  ["reforco",    "llm"],
-  ["backprop",   "sup"],
-  ["chatbots",   "llm"],
-  ["codeagents", "agentenode"],
-  ["ides",       "agentenode"],
+  ["reforco",       "llm"],
+  ["backprop",      "sup"],
+  ["chatbots",      "llm"],
+  ["codeagents",    "agentenode"],
+  ["ides",          "agentenode"],
+  ["workflow",      "agentenode"],
+  ["coleta",        "docs"],
+  ["features",      "core"],
+  ["versionamento", "harnesseng"],
 ];
 
 const AI_INDEX = {};
@@ -1543,15 +1560,16 @@ function CatBox({ node, depth, openIds, onToggle, onGoTo, registerRef, flashId }
   /* ── Nó categoria ── */
   const isTop = depth === 0;
   const open = openIds.has(node.id);
-  const colorCls = node.color ? " cat-clr-" + node.color : "";
+  const colorCls    = node.color     ? " cat-clr-" + node.color : "";
+  const tentativeCls = node.tentative ? " cat-tentative"         : "";
   const className =
-    "cat-box" + (isTop ? " cat-top" : " cat-sub") + colorCls + (open ? " open" : "");
+    "cat-box" + (isTop ? " cat-top" : " cat-sub") + colorCls + tentativeCls + (open ? " open" : "");
   const kindSuffix = node.kind ? " · " + node.kind : "";
 
   return (
     <div className={className} ref={(el) => registerRef(node.id, el)}>
       <button type="button" className="cat-header" onClick={() => onToggle(node.id)}>
-        <span className="cat-title">{node.label}{kindSuffix}</span>
+        <span className="cat-title">{node.label}{kindSuffix}{node.tentative && <span className="tentative-tag"> · candidato</span>}</span>
         <span className="cat-meta">
           {node.children.length} {node.children.length === 1 ? "item" : "itens"}
           <ChevronRight size={14} className="cat-chevron" aria-hidden="true" />
@@ -2574,6 +2592,8 @@ export default function App() {
         "--sage-soft": "#EAF0E6",
         "--clay": "#A8623E",
         "--clay-soft": "#F5E8E0",
+        "--slate": "#5C6B73",
+        "--slate-soft": "#EEF0F2",
       }}
     >
       <style>{`
@@ -2666,6 +2686,10 @@ export default function App() {
         .cat-clr-sage   .cat-title { color: var(--sage); }
         .cat-clr-clay   { border-color: var(--clay);   background: var(--clay-soft); }
         .cat-clr-clay   .cat-title { color: var(--clay); }
+        .cat-clr-slate  { border-color: var(--slate);  background: var(--slate-soft); }
+        .cat-clr-slate  .cat-title { color: var(--slate); }
+        .cat-tentative  { border-style: dashed; }
+        .tentative-tag  { font-size: 11px; opacity: 0.7; font-weight: 400; }
         .leaf-box { flex: 1 1 140px; max-width: 230px; background: var(--paper-card); border: 0.5px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--ink); transition: background 0.4s ease, border-color 0.2s ease; }
         .leaf-box > div { display: flex; flex-direction: column; gap: 2px; flex: 1; }
         .leaf-box > div + .rel-btn { margin-left: 6px; }
