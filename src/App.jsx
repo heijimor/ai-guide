@@ -1389,44 +1389,57 @@ const AI_TREE = [
   {
     id: "ml",
     label: "Machine learning",
-    top: "teal",
+    color: "teal",
     children: [
-      { id: "sup", label: "Supervisionado" },
-      { id: "unsup", label: "Não supervisionado" },
-      { id: "reforco", label: "Por reforço", rel: "llm" },
-      { id: "arvores", label: "Árvores e regressão" },
+      {
+        id: "core",
+        label: "Core",
+        children: [
+          { id: "sup",     label: "Supervisionado",    kind: "paradigma" },
+          { id: "unsup",   label: "Não supervisionado", kind: "paradigma" },
+          { id: "reforco", label: "Por reforço",        kind: "paradigma", rel: "llm" },
+          { id: "arvores", label: "Árvores e regressão", kind: "paradigma" },
+        ],
+      },
       {
         id: "dl",
         label: "Deep learning",
+        color: "indigo",
         children: [
-          { id: "neuronios", label: "Neurônios e camadas" },
-          { id: "backprop", label: "Backpropagation", rel: "sup" },
-          { id: "ativacao", label: "Função de ativação" },
-          { id: "cnn", label: "Redes convolucionais", rel: "imagem" },
+          { id: "neuronios", label: "Neurônios e camadas", kind: "mecanismo" },
+          { id: "backprop",  label: "Backpropagation",    kind: "mecanismo", rel: "sup" },
+          { id: "ativacao",  label: "Função de ativação", kind: "mecanismo" },
+          { id: "cnn",       label: "Redes convolucionais", kind: "mecanismo" },
           {
             id: "genai",
             label: "IA generativa",
+            color: "rose",
             children: [
-              { id: "llm", label: "LLM", rel: "reforco" },
+              { id: "llm", label: "LLM", kind: "sistema", rel: "reforco" },
               {
                 id: "rag",
                 label: "RAG",
+                kind: "estratégia",
+                color: "sage",
                 children: [
                   { id: "docs", label: "Documentos" },
-                  { id: "emb", label: "Embeddings" },
-                  { id: "vdb", label: "Vector DB" },
+                  { id: "emb",  label: "Embeddings" },
+                  { id: "vdb",  label: "Vector DB" },
                 ],
               },
-              { id: "ctxeng", label: "Context engineering" },
+              { id: "ctxeng", label: "Context engineering", kind: "estratégia" },
               {
                 id: "agentenode",
                 label: "Agente",
+                kind: "sistema",
+                color: "clay",
                 children: [
-                  { id: "memoryeng", label: "Memory engineering" },
+                  { id: "memoryeng",  label: "Memory engineering" },
                   { id: "skillsnode", label: "Skills" },
+                  { id: "toolsnode",  label: "Tools" },
                 ],
               },
-              { id: "harnesseng", label: "Harness engineering" },
+              { id: "harnesseng", label: "Harness engineering", kind: "prática", flow: true },
             ],
           },
         ],
@@ -1434,22 +1447,23 @@ const AI_TREE = [
     ],
   },
   {
-    id: "visao",
-    label: "Visão e percepção",
-    top: "violet",
+    id: "mercado",
+    label: "Mercado",
+    color: "violet",
     children: [
-      { id: "imagem", label: "Reconhecimento de imagem", rel: "cnn" },
-      { id: "objetos", label: "Detecção de objetos" },
-      { id: "segmentacao", label: "Segmentação de imagem" },
-      { id: "voz", label: "Reconhecimento de voz" },
+      { id: "chatbots",   label: "Chatbots (ChatGPT, Claude)",           rel: "llm" },
+      { id: "codeagents", label: "Agentes de código (Claude Code, Devin)", rel: "agentenode" },
+      { id: "ides",       label: "IDEs agênticas (Antigravity, Cursor)",  rel: "agentenode" },
     ],
   },
 ];
 
 const AI_LINKS = [
-  ["reforco", "llm"],
-  ["backprop", "sup"],
-  ["cnn", "imagem"],
+  ["reforco",    "llm"],
+  ["backprop",   "sup"],
+  ["chatbots",   "llm"],
+  ["codeagents", "agentenode"],
+  ["ides",       "agentenode"],
 ];
 
 const AI_INDEX = {};
@@ -1463,6 +1477,43 @@ const AI_INDEX = {};
 function CatBox({ node, depth, openIds, onToggle, onGoTo, registerRef, flashId }) {
   const hasChildren = !!node.children;
 
+  /* ── Folha com flow inline (harness engineering) ── */
+  if (!hasChildren && node.flow) {
+    const flowOpen = openIds.has(node.id);
+    const flowSteps = ["Pergunta", "RAG", "Context engineering", "Agente", "Resposta"];
+    return (
+      <div
+        className={"leaf-box leaf-flow" + (flashId === node.id ? " flash" : "") + (flowOpen ? " flow-open" : "")}
+        ref={(el) => registerRef(node.id, el)}
+      >
+        <div className="leaf-flow-header">
+          <div>
+            <span>{node.label}</span>
+            {node.kind && <span className="kind-tag">{node.kind}</span>}
+          </div>
+          <button
+            type="button"
+            className="rel-btn flow-toggle"
+            onClick={() => onToggle(node.id)}
+            aria-label="expandir fluxo do harness"
+            title="expandir fluxo do harness"
+          >
+            <ChevronRight size={13} className={"cat-chevron" + (flowOpen ? " open" : "")} aria-hidden="true" style={{ transform: flowOpen ? "rotate(90deg)" : "rotate(0deg)" }} />
+          </button>
+        </div>
+        {flowOpen && (
+          <div className="flow-body">
+            {flowSteps.map((step) => (
+              <div key={step} className="flow-step">{step}</div>
+            ))}
+            <p className="flow-note">harness avalia esse fluxo continuamente, não é uma etapa dele</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── Folha simples ── */
   if (!hasChildren) {
     const relTarget = node.rel && AI_INDEX[node.rel] ? AI_INDEX[node.rel].node : null;
     return (
@@ -1470,7 +1521,10 @@ function CatBox({ node, depth, openIds, onToggle, onGoTo, registerRef, flashId }
         className={"leaf-box" + (flashId === node.id ? " flash" : "")}
         ref={(el) => registerRef(node.id, el)}
       >
-        <span>{node.label}</span>
+        <div>
+          <span>{node.label}</span>
+          {node.kind && <span className="kind-tag">{node.kind}</span>}
+        </div>
         {relTarget && (
           <button
             type="button"
@@ -1486,15 +1540,18 @@ function CatBox({ node, depth, openIds, onToggle, onGoTo, registerRef, flashId }
     );
   }
 
+  /* ── Nó categoria ── */
   const isTop = depth === 0;
   const open = openIds.has(node.id);
+  const colorCls = node.color ? " cat-clr-" + node.color : "";
   const className =
-    "cat-box" + (isTop ? " cat-top top-" + node.top : " cat-sub") + (open ? " open" : "");
+    "cat-box" + (isTop ? " cat-top" : " cat-sub") + colorCls + (open ? " open" : "");
+  const kindSuffix = node.kind ? " · " + node.kind : "";
 
   return (
     <div className={className} ref={(el) => registerRef(node.id, el)}>
       <button type="button" className="cat-header" onClick={() => onToggle(node.id)}>
-        <span className="cat-title">{node.label}</span>
+        <span className="cat-title">{node.label}{kindSuffix}</span>
         <span className="cat-meta">
           {node.children.length} {node.children.length === 1 ? "item" : "itens"}
           <ChevronRight size={14} className="cat-chevron" aria-hidden="true" />
@@ -1574,12 +1631,38 @@ function AiMindmap() {
         if (!elA || !elB || elA.offsetParent === null || elB.offsetParent === null) return;
         const rA = elA.getBoundingClientRect();
         const rB = elB.getBoundingClientRect();
+        // Centros relativos ao wrapper
+        const ax = rA.left - wrapRect.left;
+        const ay = rA.top  - wrapRect.top;
+        const aw = rA.width;  const ah = rA.height;
+        const bx = rB.left - wrapRect.left;
+        const by = rB.top  - wrapRect.top;
+        const bw = rB.width;  const bh = rB.height;
+        const acx = ax + aw / 2;  const acy = ay + ah / 2;
+        const bcx = bx + bw / 2;  const bcy = by + bh / 2;
+        const dx = Math.abs(bcx - acx);
+        const dy = Math.abs(bcy - acy);
+        let x1, y1, x2, y2, mx, my;
+        if (dx >= dy) {
+          // conexão horizontal: sai pela lateral de A, entra pela lateral de B
+          x1 = bcx > acx ? ax + aw : ax;
+          y1 = acy;
+          x2 = bcx > acx ? bx     : bx + bw;
+          y2 = bcy;
+          mx = (x1 + x2) / 2;
+          my = y1;
+        } else {
+          // conexão vertical: sai pelo topo/fundo de A, entra pelo topo/fundo de B
+          x1 = acx;
+          y1 = bcy > acy ? ay + ah : ay;
+          x2 = bcx;
+          y2 = bcy > acy ? by     : by + bh;
+          mx = x1;
+          my = (y1 + y2) / 2;
+        }
         next.push({
           id: a + "-" + b,
-          x1: rA.left + rA.width / 2 - wrapRect.left,
-          y1: rA.top + rA.height / 2 - wrapRect.top,
-          x2: rB.left + rB.width / 2 - wrapRect.left,
-          y2: rB.top + rB.height / 2 - wrapRect.top,
+          d: `M${x1},${y1} L${mx},${my} L${x2},${y2}`,
         });
       });
       setLines(next);
@@ -1598,7 +1681,7 @@ function AiMindmap() {
       <div className="mindmap-wrap" ref={wrapRef}>
         <svg className="mindmap-lines" aria-hidden="true">
           {lines.map((l) => (
-            <line key={l.id} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} />
+            <path key={l.id} d={l.d} fill="none" stroke="var(--ink-faint)" strokeWidth="1.3" strokeDasharray="5 4" />
           ))}
         </svg>
         <div className="ai-root">
@@ -2483,6 +2566,14 @@ export default function App() {
         "--amber-soft": "#F3E7D2",
         "--violet": "#51436B",
         "--violet-soft": "#E9E4F0",
+        "--indigo": "#3D5A99",
+        "--indigo-soft": "#E8EBF7",
+        "--rose": "#8C4A6B",
+        "--rose-soft": "#F7E9EF",
+        "--sage": "#5B7553",
+        "--sage-soft": "#EAF0E6",
+        "--clay": "#A8623E",
+        "--clay-soft": "#F5E8E0",
       }}
     >
       <style>{`
@@ -2550,24 +2641,43 @@ export default function App() {
         .arch-map-hint { font-size: 12.5px; color: var(--ink-faint); margin: 10px 0 0; text-align: center; }
         .mindmap-wrap { position: relative; }
         .mindmap-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-        .mindmap-lines line { stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.55; }
         .ai-root { position: relative; z-index: 1; border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
         .ai-root-label { display: block; font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 15px; color: var(--ink); margin-bottom: 14px; }
         .cat-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
         .cat-box { border-radius: 14px; flex: 1 1 240px; }
-        .cat-top { border: 1.5px solid var(--teal); background: var(--teal-soft); padding: 14px; }
-        .cat-top.top-violet { border-color: var(--violet); background: var(--violet-soft); }
+        .cat-top { border: 1.5px solid; padding: 14px; }
         .cat-sub { border: 1.5px dashed var(--line); background: var(--paper); padding: 12px; }
         .cat-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; background: none; border: none; cursor: pointer; padding: 0; text-align: left; font: inherit; }
-        .cat-top .cat-title { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 15px; color: var(--teal); }
-        .cat-top.top-violet .cat-title { color: var(--violet); }
+        .cat-top .cat-title { font-family: "Fraunces", Georgia, serif; font-weight: 500; font-size: 15px; }
         .cat-sub .cat-title { font-weight: 600; font-size: 13.5px; color: var(--ink); }
         .cat-meta { display: flex; align-items: center; gap: 6px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--ink-faint); flex-shrink: 0; }
         .cat-chevron { transition: transform 0.15s ease; }
         .cat-box.open .cat-chevron { transform: rotate(90deg); }
         .cat-body { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-        .leaf-box { flex: 1 1 140px; max-width: 230px; display: flex; align-items: center; justify-content: space-between; gap: 6px; background: var(--paper-card); border: 0.5px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--ink); transition: background 0.4s ease, border-color 0.2s ease; }
+        .cat-clr-teal   { border-color: var(--teal);   background: var(--teal-soft); }
+        .cat-clr-teal   .cat-title { color: var(--teal); }
+        .cat-clr-violet { border-color: var(--violet); background: var(--violet-soft); }
+        .cat-clr-violet .cat-title { color: var(--violet); }
+        .cat-clr-indigo { border-color: var(--indigo); background: var(--indigo-soft); }
+        .cat-clr-indigo .cat-title { color: var(--indigo); }
+        .cat-clr-rose   { border-color: var(--rose);   background: var(--rose-soft); }
+        .cat-clr-rose   .cat-title { color: var(--rose); }
+        .cat-clr-sage   { border-color: var(--sage);   background: var(--sage-soft); }
+        .cat-clr-sage   .cat-title { color: var(--sage); }
+        .cat-clr-clay   { border-color: var(--clay);   background: var(--clay-soft); }
+        .cat-clr-clay   .cat-title { color: var(--clay); }
+        .leaf-box { flex: 1 1 140px; max-width: 230px; background: var(--paper-card); border: 0.5px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--ink); transition: background 0.4s ease, border-color 0.2s ease; }
+        .leaf-box > div { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .leaf-box > div + .rel-btn { margin-left: 6px; }
         .leaf-box.flash { background: var(--amber-soft); border-color: var(--amber); }
+        .kind-tag { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: var(--ink-faint); margin-top: 2px; }
+        .leaf-flow { display: block; max-width: 100%; flex: 1 1 100%; }
+        .leaf-flow-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .leaf-flow-header > div { display: flex; flex-direction: column; gap: 2px; }
+        .flow-toggle { flex-shrink: 0; }
+        .flow-body { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+        .flow-step { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 12.5px; color: var(--ink-soft); }
+        .flow-note { font-size: 11.5px; color: var(--ink-faint); margin: 8px 0 0; font-style: italic; }
         .rel-btn { background: none; border: none; padding: 2px; cursor: pointer; color: var(--blue); flex-shrink: 0; display: flex; }
         .rel-btn:hover { color: var(--ink); }
         .genai-pipeline { margin-top: 14px; border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--paper-card); }
